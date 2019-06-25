@@ -1,0 +1,60 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+group 'com.redhat.jfr.datasource'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.9
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    def jmcVersion = '7.1.0-SNAPSHOT'
+    compile "org.openjdk.jmc:org.openjdk.jmc.flightrecorder.configuration:${jmcVersion}"
+//    compile "org.openjdk.jmc:org.openjdk.jmc.rjmx:${jmcVersion}"
+//    compile "org.openjdk.jmc:org.openjdk.jmc.rjmx.services.jfr:${jmcVersion}"
+//    compile "org.openjdk.jmc:org.openjdk.jmc.ui.common:${jmcVersion}"
+
+    compile 'org.nanohttpd:nanohttpd-webserver:2.2.0'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+jar {
+    archiveName = "${rootProject.name}-${rootProject.version}.jar"
+
+    manifest {
+        attributes(
+                'Main-Class': 'com.redhat.jfr.datasource.jfr_prometheus_exporter.Loader',
+                'Premain-Class': 'com.redhat.jfr.datasource.jfr_prometheus_exporter.Loader',
+                'Agent-Class': 'com.redhat.jfr.datasource.jfr_prometheus_exporter.Loader',
+                'Boot-Class-Path': '',
+                'Can-Redefine-Classes': 'false',
+                'Can-Retransform-Classes': 'false',
+                'Can-Set-Native-Method-Prefix': 'false',
+                'Implementation-Title': "JFR Prometheus Exporter Agent",
+                'Implementation-Version': rootProject.version
+        )
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+application {
+    mainClassName = 'com.redhat.jfr.datasource.jfr_prometheus_exporter.Agent'
+}
+
+task attach(type: JavaExec) {
+    dependsOn += jar
+
+    classpath += files(jar.archivePath)
+    main = 'com.redhat.jfr.datasource.jfr_prometheus_exporter.Loader'
+
+    standardInput = System.in
+}
+
