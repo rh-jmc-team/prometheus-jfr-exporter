@@ -10,7 +10,7 @@ JFR Prometheus Exporter is designed to be a Java Agent loaded in the target JVM.
 
 Download the prebuilt jar from the [realse page](https://github.com/tabjy/jfr-prometheus-exporter/releases).
 ```sh
-$ wget releases/latest/download/ # TODO update download link
+$ wget https://github.com/tabjy/jfr-prometheus-exporter/releases/download/v0.1-alpha/jfr-prometheus-exporter-1.0-SNAPSHOT.jar
 ```
 
 ### [Option 2] Building from Source
