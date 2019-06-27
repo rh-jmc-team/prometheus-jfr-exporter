@@ -26,5 +26,5 @@ task runClockStatic(type: JavaExec) {
     classpath += sourceSets.main.runtimeClasspath
     main 'com.redhat.jfr.datasource.jfr_prometheus_exporter.example_target.clock.Main'
 
-    jvmArgs += "-javaagent:" + rootProject.jar.archivePath + "=port=8081,hostname=localhost,config=default"
+    jvmArgs += "-javaagent:" + rootProject.jar.archivePath + "=port=8081,hostname=localhost,config=jdk.ActiveRecording#enabled=true:jdk.CPULoad#enabled=true,authorization=user:password"
 }

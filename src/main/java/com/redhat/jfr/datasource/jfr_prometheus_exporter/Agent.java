@@ -4,7 +4,6 @@ import jdk.jfr.Configuration;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.HashMap;
@@ -30,13 +29,14 @@ public class Agent {
             // intentionally empty
         }
         Map<String, String> settings = new HashMap<>();
+        String authorization = null;
 
         if (agentArgs != null && !"".equals(agentArgs)) {
-            String[] args = agentArgs.split(":");
+            String[] args = agentArgs.split(",");
             for (String arg : args) {
                 int idx = arg.indexOf('=');
                 String key = idx != -1 ? arg.substring(0, idx): arg ;
-                String value = idx != -1 ? arg.substring(arg.indexOf('=') + 1) : null;
+                String value = idx != -1 ? arg.substring(idx + 1) : null;
 
                 if (value == null || "".equals(value)) {
                     throw new IllegalArgumentException("no value for " + key + " given");
@@ -52,7 +52,7 @@ public class Agent {
                     case "config":
                         if (value.contains("=")) {
                             // building settings from key-value pairs
-                            for (String setting : value.split(",")) {
+                            for (String setting : value.split(":")) {
                                 try {
                                     String[] pair = setting.trim().split("=");
                                     settings.put(pair[0], pair[1]);
@@ -76,15 +76,21 @@ public class Agent {
                             throw new RuntimeException(e);
                         }
                         break;
+                    case "authorization":
+                        if (!value.contains(":")) {
+                            throw new IllegalArgumentException("unable to parse authorization: " + value);
+                        }
+
+                        authorization = value;
                 }
             }
         }
 
         try {
             if (settings.size() == 0) {
-                agent = new Agent(hostname, port, config);
+                agent = new Agent(hostname, port, authorization, config);
             } else {
-                agent = new Agent(hostname, port, settings);
+                agent = new Agent(hostname, port, authorization, settings);
             }
         } catch (IOException e) {
             LOGGER.severe("Cannot load configuration: " + e.getLocalizedMessage());
@@ -97,22 +103,25 @@ public class Agent {
     private RecordingService mRecordingService;
     private Server mServer;
 
-    private Agent(String hostname, int port, Configuration configuration) throws IOException {
+    private Agent(String hostname, int port, String authorization, Configuration configuration) throws IOException {
         mRecordingService = new RecordingService(configuration);
 
-        init(hostname, port);
+        init(hostname, port, authorization);
     }
 
-    private Agent(String hostname, int port,  Map<String, String> settings) throws IOException {
+    private Agent(String hostname, int port, String authorization, Map<String, String> settings) throws IOException {
         mRecordingService = new RecordingService(settings);
 
-        init(hostname, port);
+        init(hostname, port, authorization);
     }
 
-    private void init(String hostname, int port) throws IOException {
+    private void init(String hostname, int port, String authentication) throws IOException {
         mServer = new Server(hostname, port);
-
         mServer.setRecordingService(mRecordingService);
+
+        if (authentication != null) {
+            mServer.setAuthentication(authentication);
+        }
 
         mRecordingService.start();
         mServer.start();

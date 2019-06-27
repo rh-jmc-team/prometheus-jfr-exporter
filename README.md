@@ -64,12 +64,12 @@ Then follow the wizard to attach the agent to a locally running JVM.
 
 You can optionally pass in arguments to affects how the exporter behaves. A config arugment string follows the format below:
 ```
-[port=<int>][:hostname=<string>][:config=<path_to_config.xml|builtin_config_name|<event-name>#<setting-name>=<value>[,...]>]
+[port=<int>][,hostname=<string>][,config=<path_to_config.xml|builtin_config_name|<event-name>#<setting-name>=<value>[:...]>][,authorization=<username>:<password>]
 ```
 
 ### Example
 ```
-$ java -javaagent:./build/libs/jfr-prometheus-exporter-1.0-SNAPSHOT.jar=port=8081:hostname=localhost:config=jdk.ActiveRecording#enabled=true,jdk.CPULoad#enabled=true myapp.jar
+$ java -javaagent:./build/libs/jfr-prometheus-exporter-1.0-SNAPSHOT.jar=port=8081,hostname=localhost,config=jdk.ActiveRecording#enabled=true:jdk.CPULoad#enabled=true,authorization=user:password myapp.jar
 ```
 
 By default, the exporter endpoint will be running on `http://0.0.0.0:8080/metrics` with `default` JFR configuration.
