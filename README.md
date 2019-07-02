@@ -8,7 +8,7 @@ JFR Prometheus Exporter is designed to be a Java Agent loaded in the target JVM.
 
 ### [Option 1] Using a Prebuilt JAR
 
-Download the prebuilt jar from the [realse page](https://github.com/tabjy/jfr-prometheus-exporter/releases).
+Download the prebuilt jar from the [release page](https://github.com/tabjy/jfr-prometheus-exporter/releases).
 ```sh
 $ wget https://github.com/tabjy/jfr-prometheus-exporter/releases/download/v0.1-alpha/jfr-prometheus-exporter-1.0-SNAPSHOT.jar
 ```
@@ -17,7 +17,7 @@ $ wget https://github.com/tabjy/jfr-prometheus-exporter/releases/download/v0.1-a
 
 #### Requirements
 
-This project references libraries from JDK Misson Control project, which is not published on Maven Central. In order to build from source, gradle expects to find JMC artifacts in Maven Local. Follow [offical instructions](http://hg.openjdk.java.net/jmc/jmc/file/5e0a199762b6/README.md#l177) to build JMC.
+This project references libraries from JDK Misson Control project, which is not published on Maven Central. In order to build from source, gradle expects to find JMC artifacts in Maven Local. Follow [official instructions](http://hg.openjdk.java.net/jmc/jmc/file/5e0a199762b6/README.md#l177) to build JMC.
 
 After packaging JMC, run the following command in JMC root directory to install artifacts to Maven Local.
 ```sh
