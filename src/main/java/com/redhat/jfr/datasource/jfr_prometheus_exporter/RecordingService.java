@@ -21,6 +21,8 @@ public class RecordingService {
     private Recording mRecording;
     private Instant mThen; // TODO: properly maintain time interval
 
+    private Map<String, Double> mLatestMetrics = new HashMap<>();
+
     public RecordingService(Configuration configuration) {
         mConfiguration = configuration;
     }
@@ -48,7 +50,7 @@ public class RecordingService {
         mRecording.stop();
     }
 
-    public String dumpPrometheusMetrics() throws IOException, CouldNotLoadRecordingException, EmptyRecordingException {
+    private void updateLatestMetrics() throws IOException, CouldNotLoadRecordingException, EmptyRecordingException {
         Recording dump = mRecording.copy(true);
         InputStream is = dump.getStream(mThen, Instant.now());
 
@@ -62,9 +64,9 @@ public class RecordingService {
             throw new EmptyRecordingException("Recording " + dump.getId() + " has no events recorded");
         }
 
-        Map<String, List<Double>> result = new HashMap<>();
+        Map<String, Double> result = new HashMap<>();
 
-        StringBuilder sb = new StringBuilder();
+        IMemberAccessor<?, IItem> endTimeAccessor = ItemToolkit.accessor(JfrAttributes.END_TIME);
         for (IItemIterable itemIterable : items) {
             // each itemIterable is an array of events sharing a single type.
             IType<IItem> type = itemIterable.getType();
@@ -84,48 +86,58 @@ public class RecordingService {
                 String query =
                         type.getIdentifier()
                                 .replaceAll("\\.", "_")
-                                .replaceAll("\\$", "_")
+                                .replaceAll("\\$", ":")
                                 + "{attribute=\"" + attribute.getIdentifier()
                                 + "\"}";
+
+                Double latestData = null;
+                IQuantity latestEndTime = null;
                 for (IItem item : itemIterable) {
                     if (!(accessor.getMember(item) instanceof IQuantity)) {
                         break;
                     }
 
                     Double data = ((IQuantity) accessor.getMember(item)).doubleValue();
+                    IQuantity endTime = ((IQuantity)endTimeAccessor.getMember(item));
                     if (data.isNaN()) {
                         continue;
                     }
 
-                    result.compute(query, (k, v) -> {
-                        if (v == null) {
-                            v = new LinkedList<>();
-                        }
-                        v.add(data);
-                        return v;
-                    });
+                    if (latestData == null || endTime.compareTo(latestEndTime) > 0) {
+                        latestData = data;
+                        latestEndTime = endTime;
+                    }
+                }
+
+                if (latestData != null) {
+                    result.put(query, latestData);
                 }
             }
         }
 
-        List<Map.Entry<String, List<Double>>> entries = new ArrayList(result.entrySet());
-        entries.sort(Comparator.comparing(Map.Entry::getKey));
-        for (Map.Entry<String, List<Double>> entry : entries) {
-            String query = entry.getKey();
-            double sum = 0;
-            for (Double item : entry.getValue()) {
-                sum += item;
-            }
-
-            double avg = sum / entry.getValue().size();
-            if (entry.getValue().size() == 0) {
-                avg = 0;
-            }
-
-            sb.append(query).append(" ").append(String.format("%f", avg)).append("\n");
+        for (Map.Entry<String, Double> lastMetric : mLatestMetrics.entrySet()) {
+            result.putIfAbsent(lastMetric.getKey(), lastMetric.getValue());
         }
+        mLatestMetrics = result;
 
         mThen = Instant.now();
+    }
+
+    public String dumpPrometheusMetrics() throws IOException, CouldNotLoadRecordingException, EmptyRecordingException {
+        try {
+            updateLatestMetrics();
+        } catch (EmptyRecordingException e) {
+            if (mLatestMetrics.size() == 0) {
+                throw e;
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        List<Map.Entry<String, Double>> entries = new ArrayList(mLatestMetrics.entrySet());
+        entries.sort(Comparator.comparing(Map.Entry::getKey));
+        for (Map.Entry<String, Double> entry : entries) {
+            sb.append(String.format("%s %f\n", entry.getKey(), entry.getValue()));
+        }
 
         return sb.toString();
     }
