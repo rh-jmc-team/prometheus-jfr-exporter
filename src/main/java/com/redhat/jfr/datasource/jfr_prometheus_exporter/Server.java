@@ -5,7 +5,12 @@ import org.openjdk.jmc.flightrecorder.CouldNotLoadRecordingException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 class Server extends NanoHTTPD {
     private RecordingService mRecordingService;
@@ -13,6 +18,13 @@ class Server extends NanoHTTPD {
 
     public Server(String hostname, int port) {
         super(hostname, port);
+    }
+
+    @Override
+    public void start() throws IOException {
+        setAsyncRunner(new CachedAsyncRunner());
+
+        super.start();
     }
 
     @Override
@@ -66,5 +78,29 @@ class Server extends NanoHTTPD {
 
     public void setAuthentication(String authentication) {
         mAuthToken = Base64.getEncoder().encodeToString(authentication.getBytes(StandardCharsets.UTF_8));
+    }
+
+    class CachedAsyncRunner implements NanoHTTPD.AsyncRunner {
+        private ExecutorService executorService = Executors.newCachedThreadPool();
+        private final List<ClientHandler> running = Collections.synchronizedList(new ArrayList<>());
+
+        @Override
+        public void closeAll() {
+            // copy of the list for concurrency
+            for (NanoHTTPD.ClientHandler clientHandler : new ArrayList<>(this.running)) {
+                clientHandler.close();
+            }
+        }
+
+        @Override
+        public void closed(NanoHTTPD.ClientHandler clientHandler) {
+            this.running.remove(clientHandler);
+        }
+
+        @Override
+        public void exec(NanoHTTPD.ClientHandler clientHandler) {
+            executorService.submit(clientHandler);
+            this.running.add(clientHandler);
+        }
     }
 }
