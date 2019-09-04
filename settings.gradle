@@ -1,4 +1,0 @@
-rootProject.name = 'jfr-prometheus-exporter'
-include 'jfr-prometheus-exporter-example'
-include 'example-target'
-
