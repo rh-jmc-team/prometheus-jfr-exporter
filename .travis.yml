@@ -10,7 +10,7 @@ install:
   - mvn p2:site -f $HOME/jmc/releng/third-party/pom.xml
   - mvn jetty:run -f $HOME/jmc/releng/third-party/pom.xml &
   - mvn install --quiet -DskipTests=true -Dspotbugs.skip=true -f $HOME/jmc/core/pom.xml
-  - mvn package --quiet -DskipTests=true -Dspotbugs.skip=true -f $HOME/jmc/pom.xml
+  - mvn install --quiet -DskipTests=true -Dspotbugs.skip=true -f $HOME/jmc/pom.xml
 
 script:
   - ./gradlew shadowJar
@@ -24,4 +24,4 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - $HOME/.m2
-    - jmc/releng/third-party/target
+    - $HOME/jmc/releng/third-party/target
