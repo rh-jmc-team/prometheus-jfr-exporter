@@ -5,11 +5,12 @@ dist: trusty
 jdk: oraclejdk8
 
 install:
-  - git clone https://github.com/openjdk/jmc.git
-  - mvn p2:site -f jmc/releng/third-party/pom.xml
-  - mvn jetty:run -f $JMC_THIRD_PARTY/pom.xml &
-  - mvn install --quiet -DskipTests=true -Dspotbugs.skip=true -f jmc/core/pom.xml
-  - mvn package --quiet -DskipTests=true -Dspotbugs.skip=true -f jmc/pom.xml
+  - rm $HOME/jmc -rf
+  - git clone https://github.com/openjdk/jmc.git $HOME/jmc
+  - mvn p2:site -f $HOME/jmc/releng/third-party/pom.xml
+  - mvn jetty:run -f $HOME/jmc/releng/third-party/pom.xml &
+  - mvn install --quiet -DskipTests=true -Dspotbugs.skip=true -f $HOME/jmc/core/pom.xml
+  - mvn package --quiet -DskipTests=true -Dspotbugs.skip=true -f $HOME/jmc/pom.xml
 
 script:
   - ./gradlew shadowJar
