@@ -1,9 +1,15 @@
 language: java
-install: true
 
 os: linux
 dist: trusty
 jdk: oraclejdk8
+
+install:
+  - git clone https://github.com/openjdk/jmc.git
+  - mvn p2:site -f jmc/releng/third-party/pom.xml
+  - mvn jetty:run -f $JMC_THIRD_PARTY/pom.xml &
+  - mvn install --quiet -f -DskipTests=true -Dspotbugs.skip=true jmc/core/pom.xml
+  - mvn package --quiet -f -DskipTests=true -Dspotbugs.skip=true jmc/pom.xml
 
 script:
   - ./gradlew shadowJar
@@ -16,3 +22,4 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+    - $HOME/.m2
