@@ -66,7 +66,7 @@ public class JfrConnection implements AutoCloseable {
 		try {
 			url = new JMXServiceURL(String.format(URL_FORMAT, host, port));
 		} catch (MalformedURLException e) {
-			throw new IllegalArgumentException("illegal host or port", e);
+			throw new IllegalArgumentException("illegal hostname or port", e);
 		}
 
 		JMXConnectionDescriptor cd = new JMXConnectionDescriptor(url, new InMemoryCredentials(null, null));
@@ -87,7 +87,7 @@ public class JfrConnection implements AutoCloseable {
 					System.out.println("Too many failed connections. Aborting.");
 					throw e;
 				} else {
-					System.out.println(e);
+					e.printStackTrace(System.err);
 				}
 				Thread.sleep(500);
 			}

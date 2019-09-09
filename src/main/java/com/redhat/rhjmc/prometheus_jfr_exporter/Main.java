@@ -12,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
@@ -37,8 +38,8 @@ public class Main {
 			System.exit(1);
 		}
 
-		RecordingService rs = new RecordingService(config.host, config.port, config.recordingOptions,
-				config.eventConfiguration);
+		RecordingService rs = new RecordingService(config.jmxAddr.getHostString(), config.jmxAddr.getPort(),
+				config.recordingOptions, config.eventConfiguration);
 
 		rs.start();
 
@@ -63,11 +64,13 @@ public class Main {
 					options.put(key, "");
 					continue;
 				}
+
 				if (key != null) {
 					options.put(key, token);
 					key = null;
 					continue;
 				}
+
 				arguments.add(token);
 			}
 		}
@@ -75,13 +78,32 @@ public class Main {
 		Config config = new Config();
 		InputStream eventConfigurationInput = null;
 
+		// look for help
+		if (options.containsKey("h") || options.containsKey("help")) {
+			printHelp(System.err);
+			System.exit(0);
+		}
+
+		// parsing positional arguments
+		if (arguments.size() < 1) {
+			throw new IllegalArgumentException("Too few arguments");
+		}
+
+		if (arguments.size() > 2) {
+			throw new IllegalArgumentException("Too many arguments");
+		}
+
+		// parsing jmx "hostname:port"
+		config.jmxAddr = parseHost(arguments.get(0), "localhost", JfrConnection.DEFAULT_PORT);
+
+		// parsing http "hostname:port"
+		if (arguments.size() == 2) {
+			config.httpAddr = parseHost(arguments.get(1), "0.0.0.0", 8080);
+		}
+
 		// parsing options
 		for (Map.Entry<String, String> option : options.entrySet()) {
 			switch (option.getKey()) {
-			case "h":
-			case "help":
-				printHelp(System.err);
-				System.exit(0);
 			case "destinationFile":
 			case "dumpOnExit":
 			case "maxAge":
@@ -114,24 +136,34 @@ public class Main {
 			throw new IllegalArgumentException(e);
 		}
 
-		// parsing positional arguments
-		if (arguments.size() < 1) {
-			throw new IllegalArgumentException("Too few arguments");
-		}
-
-		if (arguments.size() > 2) {
-			throw new IllegalArgumentException("Too many arguments");
-		}
-
-		config.host = arguments.get(0);
-		config.port = arguments.size() > 1 ? Integer.parseInt(arguments.get(1)) : JfrConnection.DEFAULT_PORT;
-
 		return config;
+	}
+
+	private static InetSocketAddress parseHost(String host, String defaultHostname, int defaultPort) {
+		String hostname = defaultHostname;
+		int port = defaultPort;
+
+		String[] hostnamePort = host.split(":");
+		if (hostnamePort.length > 2) {
+			throw new IllegalArgumentException("invalid host: " + host);
+		}
+		if (hostnamePort[0].length() > 0) {
+			hostname = hostnamePort[0];
+		}
+		if (hostnamePort.length > 1 && hostnamePort[1].length() > 0) {
+			try {
+				port = Integer.parseInt(hostnamePort[1]);
+			} catch (NumberFormatException e) {
+				throw new IllegalArgumentException("invalid host: " + host);
+			}
+		}
+
+		return new InetSocketAddress(hostname, port);
 	}
 
 	private static void printHelp(PrintStream ps) {
 		ps.println("Usage of Prometheus JFR exporter:");
-		ps.println("	program <host> [port] [option...]");
+		ps.println("	program <[jmxHostname]:[jmxPort]> [[httpHostname]:[httpPort]] [option...]");
 		ps.println();
 		ps.println("Options:");
 		ps.println("	-eventConfiguration <path>	a location where a .jfc configuration can be found");
@@ -140,12 +172,12 @@ public class Main {
 		ps.println("	-maxAge <time>				how far back data is kept in the disk repository");
 		ps.println("	-maxSize <size>				how much data is kept in the disk repository");
 		ps.println("	-name <name> 				a human-readable name (for example, \"My Recording\")");
-
 	}
 
 	static class Config {
-		String host;
-		int port;
+		InetSocketAddress jmxAddr;
+		InetSocketAddress httpAddr = new InetSocketAddress("0.0.0.0", 8080);
+
 		IMutableConstrainedMap<String> recordingOptions = KnownRecordingOptions.OPTION_DEFAULTS_V2
 				.emptyWithSameConstraints();
 		EventConfiguration eventConfiguration;
