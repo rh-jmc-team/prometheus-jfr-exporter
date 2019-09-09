@@ -1,12 +1,10 @@
 package com.redhat.rhjmc.prometheus_jfr_exporter;
 
 import org.openjdk.jmc.common.unit.IConstrainedMap;
+import org.openjdk.jmc.common.unit.IMutableConstrainedMap;
 import org.openjdk.jmc.common.unit.IQuantity;
-import org.openjdk.jmc.common.unit.QuantityConversionException;
 import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.flightrecorder.configuration.events.EventOptionID;
-import org.openjdk.jmc.flightrecorder.configuration.recording.RecordingOptionsBuilder;
-import org.openjdk.jmc.flightrecorder.controlpanel.ui.configuration.model.xml.XMLModel;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.model.EventConfiguration;
 import org.openjdk.jmc.rjmx.ServiceNotAvailableException;
 import org.openjdk.jmc.rjmx.services.jfr.FlightRecorderException;
@@ -15,7 +13,6 @@ import org.openjdk.jmc.rjmx.services.jfr.IRecordingDescriptor;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.ParseException;
 
 public class RecordingService {
 
@@ -27,22 +24,13 @@ public class RecordingService {
 
 	private IQuantity mLastScrape = UnitLookup.EPOCH_MS.quantity(System.currentTimeMillis());
 
-	public RecordingService(String host, InputStream eventOptionInput)
-			throws IOException, InterruptedException, ServiceNotAvailableException, QuantityConversionException,
-			ParseException {
-		this(host, JfrConnection.DEFAULT_PORT, eventOptionInput);
-	}
-
-	public RecordingService(String host, int port, InputStream eventOptionFile)
-			throws IOException, InterruptedException, ServiceNotAvailableException, QuantityConversionException,
-			ParseException {
+	public RecordingService(
+			String host, int port, IMutableConstrainedMap<String> recordingOptions, EventConfiguration eventOptions)
+			throws IOException, InterruptedException, ServiceNotAvailableException {
 		mService = new JfrConnection(host, port).getService();
 
-		// TODO: load configurations
-		mRecordingOptions = new RecordingOptionsBuilder(mService).build();
-		XMLModel model = EventConfiguration.createModel(eventOptionFile);
-		mEventOptions = new EventConfiguration(model)
-				.getEventOptions(mService.getDefaultEventOptions().emptyWithSameConstraints());
+		mRecordingOptions = recordingOptions;
+		mEventOptions = eventOptions.getEventOptions(mService.getDefaultEventOptions().emptyWithSameConstraints());
 	}
 
 	public void start() throws FlightRecorderException {

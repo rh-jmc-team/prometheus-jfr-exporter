@@ -1,14 +1,20 @@
 package com.redhat.rhjmc.prometheus_jfr_exporter;
 
 import org.eclipse.core.runtime.RegistryFactory;
+import org.openjdk.jmc.common.unit.IMutableConstrainedMap;
+import org.openjdk.jmc.common.unit.QuantityConversionException;
+import org.openjdk.jmc.flightrecorder.configuration.internal.KnownRecordingOptions;
+import org.openjdk.jmc.flightrecorder.controlpanel.ui.model.EventConfiguration;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +37,9 @@ public class Main {
 			System.exit(1);
 		}
 
-		RecordingService rs = new RecordingService(config.host, config.port, config.eventOptions);
+		RecordingService rs = new RecordingService(config.host, config.port, config.recordingOptions,
+				config.eventConfiguration);
+
 		rs.start();
 
 		for (int i : new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}) {
@@ -65,48 +73,58 @@ public class Main {
 		}
 
 		Config config = new Config();
+		InputStream eventConfigurationInput = null;
 
-		if (arguments.size() < 1) { // TODO: confirm max arg count
-			throw new IllegalArgumentException("Too few arguments");
-		}
-
-		if (arguments.size() > 2) { // TODO: confirm max arg count
-			throw new IllegalArgumentException("Too many arguments");
-		}
-
-		config.host = arguments.get(0);
-		config.port = arguments.get(1) == null ? JfrConnection.DEFAULT_PORT : Integer.parseInt(arguments.get(1));
-
+		// parsing options
 		for (Map.Entry<String, String> option : options.entrySet()) {
 			switch (option.getKey()) {
-			case "max-size":
+			case "h":
+			case "help":
+				printHelp(System.err);
+				System.exit(0);
+			case "destinationFile":
+			case "dumpOnExit":
+			case "maxAge":
+			case "maxSize":
+			case "name":
 				try {
-					config.maxSize = Long.parseLong(option.getValue());
-				} catch (NumberFormatException e) {
+					config.recordingOptions.putPersistedString(option.getKey(), option.getValue());
+				} catch (QuantityConversionException e) {
 					throw new IllegalArgumentException(e);
 				}
 				break;
-			case "max-age":
+			case "eventConfiguration":
 				try {
-					config.maxAge = Long.parseLong(option.getValue());
-				} catch (NumberFormatException e) {
-					throw new IllegalArgumentException(e);
-				}
-				break;
-			case "event-options":
-				try {
-					config.eventOptions = new FileInputStream(option.getValue());
+					eventConfigurationInput = new FileInputStream(option.getValue());
 				} catch (FileNotFoundException e) {
 					throw new IllegalArgumentException(e);
 				}
+				break;
 			default:
 				throw new IllegalArgumentException("Unrecognized option: " + option.getKey());
 			}
 		}
 
-		if (config.eventOptions == null) {
-			config.eventOptions = Main.class.getResourceAsStream("default.jfc");
+		if (eventConfigurationInput == null) {
+			eventConfigurationInput = Main.class.getResourceAsStream("default.jfc");
 		}
+		try {
+			config.eventConfiguration = new EventConfiguration(EventConfiguration.createModel(eventConfigurationInput));
+		} catch (IOException | ParseException e) {
+			throw new IllegalArgumentException(e);
+		}
+
+		// parsing positional arguments
+		if (arguments.size() < 1) {
+			throw new IllegalArgumentException("Too few arguments");
+		}
+
+		if (arguments.size() > 2) {
+			throw new IllegalArgumentException("Too many arguments");
+		}
+
+		config.host = arguments.get(0);
+		config.port = arguments.size() > 1 ? Integer.parseInt(arguments.get(1)) : JfrConnection.DEFAULT_PORT;
 
 		return config;
 	}
@@ -116,15 +134,20 @@ public class Main {
 		ps.println("	program <host> [port] [option...]");
 		ps.println();
 		ps.println("Options:");
-		ps.println("	--max-size <long>		how much data is kept in the disk repository");
-		ps.println("	--max-age <long>		how far back data is kept in the disk repository");
+		ps.println("	-eventConfiguration <path>	a location where a .jfc configuration can be found");
+		ps.println("	-destinationFile <path>		a location where data is written on recording stop");
+		ps.println("	-dumpOnExit <bool>			set this recording to dump to disk when the JVM exits");
+		ps.println("	-maxAge <time>				how far back data is kept in the disk repository");
+		ps.println("	-maxSize <size>				how much data is kept in the disk repository");
+		ps.println("	-name <name> 				a human-readable name (for example, \"My Recording\")");
+
 	}
 
 	static class Config {
 		String host;
-		Integer port;
-		Long maxAge;
-		Long maxSize;
-		InputStream eventOptions;
+		int port;
+		IMutableConstrainedMap<String> recordingOptions = KnownRecordingOptions.OPTION_DEFAULTS_V2
+				.emptyWithSameConstraints();
+		EventConfiguration eventConfiguration;
 	}
 }
