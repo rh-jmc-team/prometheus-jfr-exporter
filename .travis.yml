@@ -25,3 +25,11 @@ cache:
     - $HOME/.gradle/wrapper/
     - $HOME/.m2
     - $HOME/jmc/releng/third-party/target
+
+deploy:
+  provider: releases
+  api_key:
+    secure: IzFXXFLGT0b3/xQv20Xl+Uh3/ZqYpI32A3S1lQ18oVYgZAs4Nt78RUIhfWXiwiQgX8MfVQL55S+IRoCCKEn4plZ1btPHJWRLyZ4p1i10X8Zo2WwUqnQ5vw5BjILE6SZYmyuMupixY8dXe4h2GRtNYhJn9nik0Vv+PXuCuXxuYDdJzmFe+HlfNcmCoi8ZN6Acn8nzBRlgk8xJ+bqs9+wz4UHoTwduZad9BiGWmm9Vuee7Jpq37+UPCitQbQW4eRmPU8gUujzylfEwng+mU4nNpBEw/5z1MUXzNGo3u4nX56O60lpbdcjmHnudRl0/Cz+vG7eZ9AJKW/SSVl1PV/dXxGhuXN8DKzvKNkCTZBEsDJ7S8WsYBe10sDLra7dP6r7slC+aNfykQCQNnjyeJcOLFC0ME+DEDRgxlPdanNbrNQlH41rh1nzYSqAjF0iES8D1lQACZkT2Wy3jq7GTB/3Ny2VbBTytxMWXNTZwup8cOoNCii1twcVBlNTkOIGan9uHZ2zY0UrZC7DjLKjRvnrLNRy9ABDUBVZuWinkOS8M/1e3IyEq1kQ3f2++b3hMKrxOWctfX89U1EAN5AiHG51p6yGbk98FmSuB5j0c0+y1vGmAQ44AnuUnvwucbNb051U8v5p6N/7QKhviHuMQCkk16//6LLlCjM+NqRwU3zzhs/E=
+  file: "./build/libs/*"
+  on:
+    repo: tabjy/prometheus-jfr-exporter
