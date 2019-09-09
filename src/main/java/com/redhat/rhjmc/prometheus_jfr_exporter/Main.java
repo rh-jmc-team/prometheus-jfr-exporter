@@ -6,15 +6,12 @@ import org.openjdk.jmc.common.unit.QuantityConversionException;
 import org.openjdk.jmc.flightrecorder.configuration.internal.KnownRecordingOptions;
 import org.openjdk.jmc.flightrecorder.controlpanel.ui.model.EventConfiguration;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,19 +35,14 @@ public class Main {
 			System.exit(1);
 		}
 
-		RecordingService rs = new RecordingService(config.jmxAddr.getHostString(), config.jmxAddr.getPort(),
-				config.recordingOptions, config.eventConfiguration);
-
+		RecordingService rs = new RecordingService(config.jmxAddr, config.recordingOptions, config.eventConfiguration);
 		rs.start();
 
-		for (int i : new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}) {
-			InputStream is = rs.openRecording();
-			Files.copy(is, (new File("/tmp/dump" + i + ".jfr")).toPath(), StandardCopyOption.REPLACE_EXISTING);
-			is.close();
-			Thread.sleep(1000);
-		}
+		HttpService hs = new HttpService(config.httpAddr);
+		hs.start();
 
-		rs.stop();
+		JfrCollector collector = new JfrCollector(rs);
+		collector.register();
 	}
 
 	private static Config parseCommand(String[] tokens) {

@@ -13,6 +13,7 @@ import org.openjdk.jmc.rjmx.services.jfr.IRecordingDescriptor;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 
 public class RecordingService {
 
@@ -25,9 +26,9 @@ public class RecordingService {
 	private IQuantity mLastScrape = UnitLookup.EPOCH_MS.quantity(System.currentTimeMillis());
 
 	public RecordingService(
-			String host, int port, IMutableConstrainedMap<String> recordingOptions, EventConfiguration eventOptions)
+			InetSocketAddress addr, IMutableConstrainedMap<String> recordingOptions, EventConfiguration eventOptions)
 			throws IOException, InterruptedException, ServiceNotAvailableException {
-		mService = new JfrConnection(host, port).getService();
+		mService = new JfrConnection(addr.getHostString(), addr.getPort()).getService();
 
 		mRecordingOptions = recordingOptions;
 		mEventOptions = eventOptions.getEventOptions(mService.getDefaultEventOptions().emptyWithSameConstraints());
