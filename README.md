@@ -49,11 +49,11 @@ JFR Prometheus Exporter accesses recordings using JMX connections. Before runnin
 ```sh
 $ java -jar ./prometheus-jfr-exporter-1.0-SNAPSHOT-all.jar -h
 Usage of Prometheus JFR exporter:
-  program <[jmxHostname][:jmxPort]> [[httpHostname][:httpPort]] [option...]
+  program <[jmxHostname]:[jmxPort]> [[httpHostname]:[httpPort]] [option...]
 
 Options:
   -eventConfiguration <path>  a location where a .jfc configuration can be found
-  -destinationFile <path>     a location where data is written on recording stop
+  -disk [bool]                set this recording to continuously flush to the disk repository
   -dumpOnExit [bool]          set this recording to dump to disk when the JVM exits
   -maxAge <time>              how far back data is kept in the disk repository
   -maxSize <size>             how much data is kept in the disk repository
