@@ -95,27 +95,32 @@ public class Main {
 
 		// parsing options
 		for (Map.Entry<String, String> option : options.entrySet()) {
+			String key = option.getKey();
+			String value = option.getValue();
 			switch (option.getKey()) {
-			case "destinationFile":
+			case "disk":
 			case "dumpOnExit":
+				if (value == null || "".equals(value)) {
+					value = "true";
+				}
 			case "maxAge":
 			case "maxSize":
 			case "name":
 				try {
-					config.recordingOptions.putPersistedString(option.getKey(), option.getValue());
+					config.recordingOptions.putPersistedString(key, value);
 				} catch (QuantityConversionException e) {
-					throw new IllegalArgumentException(e);
+					throw new IllegalArgumentException("Invalid option argument for " + key + ": " + value, e);
 				}
 				break;
 			case "eventConfiguration":
 				try {
-					eventConfigurationInput = new FileInputStream(option.getValue());
+					eventConfigurationInput = new FileInputStream(value);
 				} catch (FileNotFoundException e) {
-					throw new IllegalArgumentException(e);
+					throw new IllegalArgumentException("Event configuration not found: " + value, e);
 				}
 				break;
 			default:
-				throw new IllegalArgumentException("Unrecognized option: " + option.getKey());
+				throw new IllegalArgumentException("Unrecognized option: " + key);
 			}
 		}
 
@@ -125,7 +130,7 @@ public class Main {
 		try {
 			config.eventConfiguration = new EventConfiguration(EventConfiguration.createModel(eventConfigurationInput));
 		} catch (IOException | ParseException e) {
-			throw new IllegalArgumentException(e);
+			throw new IllegalArgumentException("Invalid event configuration input", e);
 		}
 
 		return config;
@@ -155,15 +160,15 @@ public class Main {
 
 	private static void printHelp(PrintStream ps) {
 		ps.println("Usage of Prometheus JFR exporter:");
-		ps.println("	program <[jmxHostname]:[jmxPort]> [[httpHostname]:[httpPort]] [option...]");
+		ps.println("  program <[jmxHostname]:[jmxPort]> [[httpHostname]:[httpPort]] [option...]");
 		ps.println();
 		ps.println("Options:");
-		ps.println("	-eventConfiguration <path>	a location where a .jfc configuration can be found");
-		ps.println("	-destinationFile <path>		a location where data is written on recording stop");
-		ps.println("	-dumpOnExit <bool>			set this recording to dump to disk when the JVM exits");
-		ps.println("	-maxAge <time>				how far back data is kept in the disk repository");
-		ps.println("	-maxSize <size>				how much data is kept in the disk repository");
-		ps.println("	-name <name> 				a human-readable name (for example, \"My Recording\")");
+		ps.println("  -eventConfiguration <path>  a location where a .jfc configuration can be found");
+		ps.println("  -disk [bool]                set this recording to continuously flush to the disk repository");
+		ps.println("  -dumpOnExit [bool]          set this recording to dump to disk when the JVM exits");
+		ps.println("  -maxAge <time>              how far back data is kept in the disk repository");
+		ps.println("  -maxSize <size>             how much data is kept in the disk repository");
+		ps.println("  -name <name>                a human-readable name (for example, \"My Recording\")");
 	}
 
 	static class Config {
