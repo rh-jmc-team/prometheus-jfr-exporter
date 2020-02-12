@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    def jmcVersion = '7.1.0-SNAPSHOT'
+    def jmcVersion = '8.0.0-SNAPSHOT'
     compile "org.openjdk.jmc:org.openjdk.jmc.flightrecorder.configuration:${jmcVersion}", {
         exclude group: 'org.jacoco', module: 'jacoco-maven-plugin'
     }
@@ -36,8 +36,9 @@ dependencies {
     }
     compile "org.eclipse.platform:org.eclipse.core.runtime:3.15.0"
 
-    compile "io.prometheus:simpleclient:0.6.0"
-    compile "io.prometheus:simpleclient_httpserver:0.6.0"
+    def prometheusClientVersion = '0.8.1'
+    compile "io.prometheus:simpleclient:${prometheusClientVersion}"
+    compile "io.prometheus:simpleclient_httpserver:${prometheusClientVersion}"
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
